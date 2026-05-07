@@ -336,10 +336,10 @@ export default function App() {
   const alertRef   = useRef({});
 
   // — Derived theme & styles (memoised) —
-  const T = THEMES[isDark ? 'dark' : 'light'];
-  const S = useMemo(() => makeS(T, isMobile), [T, isMobile]);
   const { w } = useWindowSize();
   const isMobile = w < 768;
+  const T = THEMES[isDark ? 'dark' : 'light'];
+  const S = useMemo(() => makeS(T, isMobile), [T, isMobile]);
   
   // ── Logging ─────────────────────────────────────────────────────
   const addLog = useCallback((text, type='system') =>
