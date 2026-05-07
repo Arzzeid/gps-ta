@@ -95,8 +95,8 @@ const THEMES = {
 };
 
 // ── Styles factory ────────────────────────────────────────────────
-const makeS = (T) => ({
-  root:        { display:'flex', flexDirection:'column', height:'100vh', background:T.root, color:T.text, padding:16, gap:12, boxSizing:'border-box', fontFamily:FUI },
+const makeS = (T, isMobile=false) => ({
+  root:        { display:'flex', flexDirection:'column', height:'100vh', background:T.root, color:T.text, padding: isMobile ? 8 : 16, gap: isMobile ? 8 : 12, boxSizing:'border-box', fontFamily:FUI }, header: { display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0 },
   header:      { display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0 },
   logoBox:     { width:32, height:32, borderRadius:8, background:'#1d4ed8', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 },
   subTitle:    { fontSize:11, color:T.textMuted, fontWeight:600, letterSpacing:'0.06em', textTransform:'uppercase' },
@@ -104,10 +104,9 @@ const makeS = (T) => ({
   dot:         { width:8, height:8, borderRadius:'50%', flexShrink:0 },
   badgePaused: { background:'#7c2d12', color:'#fb923c', fontSize:11, fontWeight:700, padding:'3px 10px', borderRadius:20 },
   badgeActive: { background:'#14532d', color:'#4ade80', fontSize:11, fontWeight:700, padding:'3px 10px', borderRadius:20 },
-  body:        { flex:1, display:'grid', gridTemplateColumns:'auto 1fr', gap:12, minHeight:0, maxHeight:'100%', overflowX:'hidden', overflowY:'hidden' },
-  sidebar:     { display:'flex', flexDirection:'column', gap:10, width:320, minHeight:0, maxHeight:'100%', overflowX:'hidden', overflowY:'hidden', transition:'width .25s ease, opacity .2s ease' },
-  sidebarScroll: { flex:1, overflowY:'auto', display:'flex', flexDirection:'column', gap:10, minHeight:0 },
-  sidebarHide: { width:0, opacity:0, overflowX:'hidden', overflowY:'hidden', pointerEvents:'none' },
+  body:        { flex:1, display:'grid', gridTemplateColumns: isMobile ? '1fr' : 'auto 1fr', gridTemplateRows: isMobile ? 'auto 1fr' : '1fr', gap:12, minHeight:0, maxHeight:'100%', overflowX:'hidden', overflowY: isMobile ? 'auto' : 'hidden' },
+  sidebar:     { display: 'flex', flexDirection: 'column', gap:10, width: isMobile ? '100%' : 320, minHeight: isMobile ? 'auto' : 0, maxHeight: isMobile ? 'none' : '100%', overflowX: 'hidden', overflowY: isMobile ? 'visible' : 'hidden', transition: 'width .25s ease, opacity .2s ease' },
+  sidebarScroll: { flex: isMobile ? 'none' : 1, overflowY: isMobile ? 'visible' : 'auto', display:'flex', flexDirection:'column', gap:10, minHeight:0 },  sidebarHide  : isMobile ? { height:0, opacity:0, overflowX:'hidden', overflowY:'hidden', pointerEvents:'none' } : { width:0,  opacity:0, overflowX:'hidden', overflowY:'hidden', pointerEvents:'none' },
   card:        { background:T.surface, border:`1px solid ${T.border}`, borderRadius:12, padding:14, flexShrink:0 },
   secTitle:    { fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em', color:T.textMuted, marginBottom:8 },
   label:       { fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.08em', color:T.textMuted, marginBottom:2 },
@@ -116,7 +115,7 @@ const makeS = (T) => ({
   logWrap:     { padding:'5px 8px', borderRadius:6, background:T.logBg, borderLeft:'2px solid', display:'flex', gap:8, alignItems:'flex-start' },
   tag:         { fontSize:10, fontWeight:700, padding:'2px 6px', borderRadius:4, textTransform:'uppercase', letterSpacing:'0.06em', flexShrink:0 },
   iconBtn:     { background:'transparent', border:'none', cursor:'pointer', padding:'2px 4px' },
-  mapWrap:     { background:T.surface, border:`1px solid ${T.border}`, borderRadius:12, overflowX:'hidden', overflowY:'hidden', position:'relative' },
+  mapWrap:     { background:T.surface, border:`1px solid ${T.border}`, borderRadius:12, overflowX:'hidden', overflowY:'hidden', position:'relative', minHeight: isMobile ? 380 : 'auto' },
   mapOverlay:  { position:'absolute', top:12, right:12, zIndex:999, background:T.overlayBg, border:`1px solid ${T.border}`, borderRadius:8, padding:'8px 12px', backdropFilter:'blur(6px)', fontSize:12 },
   noSignal:    { position:'absolute', inset:0, zIndex:500, display:'flex', alignItems:'center', justifyContent:'center', flexDirection:'column', background:T.noSignalBg, borderRadius:12, pointerEvents:'none', textAlign:'center' },
   btnPrimary:  { display:'flex', alignItems:'center', gap:6, padding:'8px 16px', borderRadius:8, border:'none', background:'#3b82f6', color:'#fff', fontWeight:700, fontSize:13, cursor:'pointer', fontFamily:FUI },
@@ -285,6 +284,17 @@ const DEFAULT_CONFIG = {
 const DEFAULT_POS   = { lat:-7.797068, lng:110.370529 };
 const FENCE_COLORS  = ['#f59e0b','#10b981','#8b5cf6','#ef4444','#06b6d4','#f43f5e'];
 
+// ── Responsive hook ───────────────────────────────────────────────
+function useWindowSize() {
+  const [size, setSize] = useState({ w: window.innerWidth, h: window.innerHeight });
+  useEffect(() => {
+    const handler = () => setSize({ w: window.innerWidth, h: window.innerHeight });
+    window.addEventListener('resize', handler);
+    return () => window.removeEventListener('resize', handler);
+  }, []);
+  return size;
+}
+
 // ── App ───────────────────────────────────────────────────────────
 export default function App() {
   // — UI state —
@@ -327,8 +337,10 @@ export default function App() {
 
   // — Derived theme & styles (memoised) —
   const T = THEMES[isDark ? 'dark' : 'light'];
-  const S = useMemo(() => makeS(T), [T]);
-
+  const S = useMemo(() => makeS(T, isMobile), [T, isMobile]);
+  const { w } = useWindowSize();
+  const isMobile = w < 768;
+  
   // ── Logging ─────────────────────────────────────────────────────
   const addLog = useCallback((text, type='system') =>
     setLogs(p => [{id:Date.now()+Math.random(), time:nowStr(), text, type}, ...p].slice(0,100))
@@ -522,7 +534,7 @@ export default function App() {
         onCancel={()=>{setShowNameModal(false);setIsDrawing(false);setDraftPoints([]);}} />}
 
       {/* ── Header ── */}
-      <header style={S.header}>
+      <header style={{...S.header, flexWrap:'wrap', gap:8}}>
         <div style={{display:'flex',alignItems:'center',gap:8}}>
           <button onClick={()=>setSidebarOpen(o=>!o)}
             title={sidebarOpen?'Sembunyikan sidebar':'Tampilkan sidebar'}
@@ -541,7 +553,7 @@ export default function App() {
           </div>
         </div>
 
-        <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
+        <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap',justifyContent:'flex-end'}}>
           {anyBreach && (
             <div style={{background:'#450a0a',border:'1px solid #ef4444',color:'#fca5a5',
               fontSize:12,fontWeight:700,padding:'5px 12px',borderRadius:8}}>⚠ KELUAR ZONA</div>
@@ -553,20 +565,24 @@ export default function App() {
           )}
           <div style={S.statusBadge}>
             <span style={{...S.dot, background:connColor}} />
-            <span style={{fontSize:12,fontWeight:600,color:connColor}}>
+            {!isMobile && <span style={{fontSize:12,fontWeight:600,color:connColor}}>
               {connStatus==='connected'?'Terhubung':connStatus==='connecting'?'Menghubungkan…':'Terputus'}
-            </span>
+            </span>}
           </div>
           {isPaused && <span style={S.badgePaused}>PAUSED</span>}
-          {!isPaused && connStatus==='connected' && <span style={S.badgeActive}>AKTIF</span>}
-          <button onClick={()=>setIsDark(d=>!d)} title={isDark?'Light mode':'Dark mode'}
-            style={{...S.btnOutline,padding:'6px 12px',fontSize:15}}>
+          {!isPaused && connStatus==='connected' && !isMobile && <span style={S.badgeActive}>AKTIF</span>}
+          <button onClick={()=>setIsDark(d=>!d)} style={{...S.btnOutline,padding:'6px 10px',fontSize:15}}>
             {isDark?'☀️':'🌙'}
           </button>
-          <button style={S.btnOutline} onClick={()=>setShowSettings(true)}>⚙ Pengaturan</button>
+          {!isMobile && <button style={S.btnOutline} onClick={()=>setShowSettings(true)}>⚙ Pengaturan</button>}
+          {isMobile && <button style={{...S.btnOutline,padding:'6px 10px'}} onClick={()=>setShowSettings(true)}>⚙</button>}
           {connStatus!=='connected'
-            ? <button style={S.btnPrimary} onClick={()=>connect()}>Hubungkan</button>
-            : <button style={{...S.btnOutline,color:'#ef4444',borderColor:'#7f1d1d'}} onClick={disconnect}>Putuskan</button>
+            ? <button style={S.btnPrimary} onClick={()=>connect()}>
+                {isMobile ? '▶' : 'Hubungkan'}
+              </button>
+            : <button style={{...S.btnOutline,color:'#ef4444',borderColor:'#7f1d1d'}} onClick={disconnect}>
+                {isMobile ? '✕' : 'Putuskan'}
+              </button>
           }
         </div>
       </header>
